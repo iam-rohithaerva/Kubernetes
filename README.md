@@ -2,6 +2,12 @@
 
 Operational runbooks for Kubernetes clusters.
 
+## Cluster setup
+
+| Guide | Description |
+|---|---|
+| [How to Build a Self-Managed Cluster with kubeadm](kubeadm-cluster-setup-baremetal.md) | Building a kubeadm cluster on physical servers, with the reason for each step and what breaks if you skip it |
+
 ## etcd
 
 | Guide | Description |
