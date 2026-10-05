@@ -1,0 +1,11 @@
+# Enforce mTLS for every workload in the shop namespace.
+# Roll out with mode PERMISSIVE first, switch to STRICT once every
+# client of these services has a sidecar.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: shop
+spec:
+  mtls:
+    mode: STRICT

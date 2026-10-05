@@ -1,0 +1,10 @@
+# Trace sampling for the whole mesh. 100% is for testing only,
+# use 1-5% in production.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  tracing:
+  - randomSamplingPercentage: 100.0

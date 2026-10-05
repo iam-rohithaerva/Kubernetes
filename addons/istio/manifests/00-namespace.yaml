@@ -1,0 +1,15 @@
+# Demo namespace. The label tells the Istio webhook to inject an Envoy
+# sidecar into every pod created here.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shop
+  labels:
+    istio-injection: enabled
+---
+# A namespace without injection, used only to prove that plain-text
+# traffic is rejected once STRICT mTLS is on.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: legacy

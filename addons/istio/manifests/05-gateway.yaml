@@ -1,0 +1,15 @@
+# Opens port 80 on the istio-ingressgateway for shopkart.example.com.
+# Routing for this host is defined in the orders VirtualService.
+# For production, add a 443 server with tls.mode SIMPLE and a
+# credentialName secret in istio-system.
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: shop-gw
+  namespace: shop
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port: {number: 80, name: http, protocol: HTTP}
+    hosts: ["shopkart.example.com"]

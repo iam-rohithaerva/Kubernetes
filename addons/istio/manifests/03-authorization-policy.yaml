@@ -1,0 +1,43 @@
+# Zero trust: an empty spec denies all requests to workloads in the namespace.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: shop
+spec: {}
+---
+# orders accepts calls from frontend and from the ingress gateway
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: orders-allow
+  namespace: shop
+spec:
+  selector:
+    matchLabels: {app: orders}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/shop/sa/frontend
+        - cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account
+---
+# payments accepts only POST /pay from orders
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: payments-allow
+  namespace: shop
+spec:
+  selector:
+    matchLabels: {app: payments}
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/shop/sa/orders"]
+    to:
+    - operation:
+        methods: ["POST"]
+        paths: ["/pay"]

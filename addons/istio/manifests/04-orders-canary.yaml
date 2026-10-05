@@ -1,0 +1,41 @@
+# Subsets map names to pod labels. VirtualService refers to these names.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  host: orders
+  subsets:
+  - name: v1
+    labels: {version: v1}
+  - name: v2
+    labels: {version: v2}
+---
+# Applies to traffic inside the mesh (mesh) and from the ingress gateway.
+# Change the weights to move traffic: 100/0 -> 90/10 -> 50/50 -> 0/100.
+# Rollback is setting them back to 100/0, no pod restart needed.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  hosts: ["orders", "shopkart.example.com"]
+  gateways: ["mesh", "shop-gw"]
+  http:
+  - match:
+    - headers:
+        x-user-type: {exact: beta}
+    route:
+    - destination: {host: orders, subset: v2}
+  - route:
+    - destination: {host: orders, subset: v1}
+      weight: 90
+    - destination: {host: orders, subset: v2}
+      weight: 10
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: 5xx,connect-failure,reset
+    timeout: 10s

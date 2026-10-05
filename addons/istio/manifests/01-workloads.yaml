@@ -1,0 +1,95 @@
+# Each workload has its own ServiceAccount. Istio uses the ServiceAccount
+# as the workload identity in mTLS certificates and AuthorizationPolicy.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: frontend, namespace: shop}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: orders, namespace: shop}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: payments, namespace: shop}
+---
+# frontend: a curl container used as the client in the tests
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: frontend, namespace: shop}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: frontend}}
+  template:
+    metadata: {labels: {app: frontend, version: v1}}
+    spec:
+      serviceAccountName: frontend
+      containers:
+      - name: frontend
+        image: curlimages/curl:8.10.1
+        command: ["sleep", "infinity"]
+---
+# orders v1 and v2: same app label, different version label.
+# The responses say which version answered, so the canary split is visible.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: orders-v1, namespace: shop}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: orders, version: v1}}
+  template:
+    metadata: {labels: {app: orders, version: v1}}
+    spec:
+      serviceAccountName: orders
+      containers:
+      - name: orders
+        image: hashicorp/http-echo:1.0
+        args: ["-text=orders-v1", "-listen=:8080"]
+        ports: [{containerPort: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: orders-v2, namespace: shop}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: orders, version: v2}}
+  template:
+    metadata: {labels: {app: orders, version: v2}}
+    spec:
+      serviceAccountName: orders
+      containers:
+      - name: orders
+        image: hashicorp/http-echo:1.0
+        args: ["-text=orders-v2", "-listen=:8080"]
+        ports: [{containerPort: 8080}]
+---
+# One Service for both versions. Do not put "version" in the selector,
+# otherwise only one version receives traffic.
+apiVersion: v1
+kind: Service
+metadata: {name: orders, namespace: shop}
+spec:
+  selector: {app: orders}
+  ports: [{name: http, port: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: payments, namespace: shop}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: payments}}
+  template:
+    metadata: {labels: {app: payments, version: v1}}
+    spec:
+      serviceAccountName: payments
+      containers:
+      - name: payments
+        image: hashicorp/http-echo:1.0
+        args: ["-text=payment-ok", "-listen=:8080"]
+        ports: [{containerPort: 8080}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: payments, namespace: shop}
+spec:
+  selector: {app: payments}
+  ports: [{name: http, port: 8080}]
